@@ -146,13 +146,13 @@ wss.on('connection', (ws) => {
                         return;
                     }
                     
-                    // Difundir mensaje a todos
+                    // Difundir mensaje a todos EXCEPTO al emisor
                     broadcast({
                         type: 'message',
                         username: username,
                         message: validMessage,
                         timestamp: new Date().toISOString()
-                    });
+                    }, clientId);
                     break;
                     
                 case 'typing':
