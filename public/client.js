@@ -111,7 +111,7 @@ function handleMessage(data) {
             break;
             
         case 'system':
-            displaySystemMessage(data.message);
+            displaySystemMessage(data.message, data.timestamp);
             break;
             
         case 'userList':
@@ -139,21 +139,59 @@ function handleMessage(data) {
     }
 }
 
+// Formatear fecha de manera inteligente
+function formatMessageTime(timestamp) {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const messageDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    
+    const time = date.toLocaleTimeString('es-ES', { 
+        hour: '2-digit', 
+        minute: '2-digit' 
+    });
+    
+    // Si es hoy, solo mostrar hora
+    if (messageDate.getTime() === today.getTime()) {
+        return time;
+    }
+    
+    // Si fue ayer
+    if (messageDate.getTime() === yesterday.getTime()) {
+        return `Ayer ${time}`;
+    }
+    
+    // Si fue esta semana (últimos 7 días)
+    const weekAgo = new Date(today);
+    weekAgo.setDate(weekAgo.getDate() - 7);
+    if (messageDate > weekAgo) {
+        const dayName = date.toLocaleDateString('es-ES', { weekday: 'long' });
+        return `${dayName.charAt(0).toUpperCase() + dayName.slice(1)} ${time}`;
+    }
+    
+    // Si es más antiguo, mostrar fecha completa
+    const dateStr = date.toLocaleDateString('es-ES', { 
+        day: '2-digit', 
+        month: '2-digit',
+        year: 'numeric'
+    });
+    return `${dateStr} ${time}`;
+}
+
 // Mostrar mensaje en el chat
 function displayMessage(user, message, timestamp, isOwn) {
     const messageDiv = document.createElement('div');
     messageDiv.className = `message ${isOwn ? 'message-own' : 'message-other'}`;
     
-    const time = new Date(timestamp).toLocaleTimeString('es-ES', { 
-        hour: '2-digit', 
-        minute: '2-digit' 
-    });
+    const formattedTime = formatMessageTime(timestamp);
     
     messageDiv.innerHTML = `
         <div class="message-content">
             <div class="message-username">${escapeHtml(user)}</div>
             <div class="message-text">${escapeHtml(message)}</div>
-            <div class="message-time">${time}</div>
+            <div class="message-time">${formattedTime}</div>
         </div>
     `;
     
@@ -162,10 +200,16 @@ function displayMessage(user, message, timestamp, isOwn) {
 }
 
 // Mostrar mensaje del sistema
-function displaySystemMessage(message) {
+function displaySystemMessage(message, timestamp = null) {
     const messageDiv = document.createElement('div');
     messageDiv.className = 'system-message';
-    messageDiv.textContent = message;
+    
+    if (timestamp) {
+        const formattedTime = formatMessageTime(timestamp);
+        messageDiv.textContent = `${message} - ${formattedTime}`;
+    } else {
+        messageDiv.textContent = message;
+    }
     
     messagesContainer.appendChild(messageDiv);
     scrollToBottom();
